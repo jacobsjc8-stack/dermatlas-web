@@ -13,7 +13,19 @@ const all=()=>[...BASE.filter(x=>x.level>1),...state.custom];const byId=id=>all(
 function localSave(){state.updatedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(state));dirty=true;status('Saved locally · not yet synced');}
 function status(s){$('status').textContent=s;$('syncmsg').textContent=s;}
 function renderNav(){const q=$('search').value.toLowerCase().trim();const rows=all().filter(x=>(letter==='All'||x.name[0].toUpperCase()===letter)&&(!q||[x.name,x.category,...x.lines||[],currentEntry(x.id).treatment,currentEntry(x.id).pearls].join(' ').toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));$('count').textContent=`${rows.length} diagnoses shown · ${all().length} total`;let last='';$('nav').innerHTML=rows.map(x=>{let initial=x.name[0].toUpperCase(),g=initial!==last?`<div class="group">${escapeHtml(initial)}</div>`:'';last=initial;return g+`<button data-id="${escapeHtml(x.id)}" class="${x.id===selected?'on':''}">${escapeHtml(x.name)}${(x.lines?.length||currentEntry(x.id).treatment)?'<small>●</small>':''}</button>`}).join('');document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>select(b.dataset.id));}
-function select(id){selected=id;const x=byId(id);if(!x)return;$('category').textContent=x.category;$('title').textContent=x.name;$('subtitle').textContent=x.id.startsWith('custom-')?'My custom diagnosis':'From original diagnosis library';$('source').innerHTML=x.lines?.length?x.lines.map(s=>`<p>${escapeHtml(s)}</p>`).join(''):'<p class="muted">No original treatment recorded. Add your regimen below.</p>';$('treatment').value=currentEntry(id).treatment||'';$('pearls').value=currentEntry(id).pearls||'';$('delete').disabled=!id.startsWith('custom-');$('editform').classList.add('hidden');renderGallery();renderNav();}
+function select(id){selected=id;const x=byId(id);if(!x)return;$('category').textContent=x.category;$('title').textContent=x.name;$('subtitle').textContent=x.id.startsWith('custom-')?'My custom diagnosis':'From original diagnosis library';
+const savedReference = currentEntry(id).originalOverride;
+const referenceText =
+  typeof savedReference === 'string'
+    ? savedReference.trim()
+    : '';
+
+$('source').innerHTML = referenceText
+  ? `<div style="white-space:pre-wrap;line-height:1.65">${escapeHtml(referenceText)}</div>`
+  : x.lines?.length
+    ? x.lines.map(s => `<p>${escapeHtml(s)}</p>`).join('')
+    : '<p class="muted">No original treatment recorded. Add your regimen below.</p>';
+=currentEntry(id).treatment||'';$('pearls').value=currentEntry(id).pearls||'';$('delete').disabled=!id.startsWith('custom-');$('editform').classList.add('hidden');renderGallery();renderNav();}
 $('letters').innerHTML=['All',...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map(x=>`<button data-letter="${x}" class="${x==='All'?'on':''}">${x}</button>`).join('');document.querySelectorAll('[data-letter]').forEach(b=>b.onclick=()=>{letter=b.dataset.letter;document.querySelectorAll('[data-letter]').forEach(a=>a.classList.toggle('on',a===b));renderNav()});$('search').oninput=renderNav;
 function saveFields(){if(!selected)return;state.entries[selected]={...currentEntry(selected),treatment:$('treatment').value,pearls:$('pearls').value,updatedAt:Date.now()};localSave();renderNav();} $('save').onclick=saveFields;
 
